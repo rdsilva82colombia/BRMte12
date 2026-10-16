@@ -83,6 +83,12 @@
     grid-column:1 / -1; background:var(--navy); color:#fff; border-color:var(--navy);
   }
   .aula-btn.direccion-btn:hover{ background:var(--navy-deep); }
+  .aula-loading{ grid-column:1 / -1; text-align:center; font-size:12px; color:var(--muted); padding:18px 0; }
+  .cfg-share{ font-size:12px; margin:0 0 12px; padding:8px 10px; border:1px solid var(--border); border-radius:8px; background:var(--surface-alt); line-height:1.45; }
+  .cfg-share .cfg-share-line{ margin:0 0 4px; }
+  .cfg-share .ok{ color:#1b6e3a; }
+  .cfg-share .warn{ color:#9a5b00; font-weight:600; }
+  .cfg-share .info{ color:var(--muted); }
   #direccion-aula-picker{ margin-top:6px; }
   #direccion-back-btn{ margin-top:14px; }
 
@@ -161,7 +167,9 @@
   header .brand .theme-toggle-btn:hover{ background:rgba(255,255,255,.26); }
   header .brand .theme-toggle-btn svg{ flex-shrink:0; }
   header h1{ font-size:15px; margin:0; line-height:1.2; font-weight:700; letter-spacing:.2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  header .subtitle{ font-size:11px; color:var(--gold-light); font-weight:400; }
+  header .subtitle{ font-size:11px; color:var(--gold-light); font-weight:400; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:min(60vw,720px); }
+  #user-select-org{ font-size:13px; font-weight:700; color:var(--gold); margin:0 0 6px 0; overflow-wrap:anywhere; line-height:1.3; }
+  #user-select-org:empty{ display:none; }
   header .header-right{ display:flex; align-items:center; gap:8px; flex-shrink:0; }
   #user-controls{ display:flex; align-items:center; gap:8px; flex-shrink:0; }
   #current-user-badge{ flex-shrink:0; white-space:nowrap; }
@@ -795,19 +803,33 @@
     background:#10192B;
   }
   body.mode-clima #clima-panel{ display:block; }
+  /* Capas (de abajo hacia arriba): iframe de Windy -> el MISMO mapa principal (#map, con sus calcos
+     renderizados por la tubería completa, sin teselas y transparente) -> barra de herramientas.
+     El mapa de calcos nunca captura el puntero (ni sus paneles, marcadores ni tooltips): el menú de
+     Windy (cambio de capa: viento/lluvia/temperatura...) y el paneo de Windy quedan siempre libres.
+     La barra de herramientas tampoco bloquea los huecos entre sus botones. */
   #clima-toolbar{
     position:absolute; top:14px; left:50%; transform:translateX(-50%); z-index:10;
-    display:flex; gap:8px;
+    display:flex; flex-wrap:wrap; justify-content:center; gap:8px; max-width:calc(100% - 24px);
+    pointer-events:none;
   }
+  #clima-toolbar > *{ pointer-events:auto; }
   #clima-toolbar button{ box-shadow:0 2px 10px rgba(0,0,0,.35); }
+  #clima-nav-toggle-label,
   #clima-overlay-toggle-label{
     display:flex; align-items:center; gap:5px; background:var(--surface); padding:7px 12px; border-radius:8px;
     font-size:12px; font-weight:600; color:var(--navy); box-shadow:0 2px 10px rgba(0,0,0,.35); cursor:pointer;
   }
   #clima-iframe{ position:absolute; inset:0; width:100%; height:100%; border:none; }
-  #clima-overlay-map{ position:absolute; inset:0; width:100%; height:100%; z-index:3; pointer-events:auto; background:transparent; }
-  #clima-overlay-map.hidden{ display:none; pointer-events:none; }
-  #clima-overlay-map .leaflet-container{ background:transparent; }
+  #clima-panel #map{
+    position:absolute !important; top:0; left:0; right:0; bottom:0; width:100%; height:100%;
+    z-index:3; background:transparent !important; pointer-events:none !important;
+  }
+  #clima-panel #map *{ pointer-events:none !important; }
+  #clima-panel #map .leaflet-tile-pane,
+  #clima-panel #map .leaflet-control-container{ display:none !important; }
+  body.clima-nav #clima-panel #map{ pointer-events:auto !important; }
+  body.clima-no-calcos #clima-panel #map{ visibility:hidden; }
 
   /* ---------- PANEL PERSONAL ---------- */
   #personal-panel{
@@ -969,6 +991,69 @@
   body.theme-digital #draw-toolbar .tool-btn.active,
   body.theme-digital .tool-submenu-row .tool-btn.active{ box-shadow:0 0 8px rgba(34,211,238,.45); }
 
+
+  /* ---------- ASISTENTE DE CONFIGURACIÓN INICIAL DE SINCRONIZACIÓN ---------- */
+  #ghs-screen{
+    position:fixed; inset:0; z-index:5100; background:linear-gradient(135deg,var(--navy-deep),var(--navy));
+    display:flex; align-items:flex-start; justify-content:center; padding:20px 16px; overflow-y:auto;
+  }
+  #ghs-screen.hide{ display:none; }
+  #ghs-card{
+    background:var(--surface); border-radius:16px; padding:28px 32px 22px; max-width:560px; width:100%; margin:auto 0;
+    box-shadow:0 12px 40px rgba(0,0,0,.4); border-top:4px solid var(--gold); box-sizing:border-box;
+  }
+  #ghs-card .pw-crest{ margin-bottom:8px; }
+  #ghs-card h1{ font-size:19px; color:var(--navy); margin:0 0 6px; text-align:center; }
+  .ghs-lead{ font-size:13px; color:var(--muted); margin:0 0 16px; text-align:center; line-height:1.5; }
+  .ghs-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px 12px; }
+  .ghs-field{ display:flex; flex-direction:column; gap:4px; min-width:0; }
+  .ghs-field.wide{ grid-column:1 / -1; }
+  .ghs-field label{ font-size:12px; font-weight:700; color:var(--navy); }
+  .ghs-field .ghs-help{ font-size:11px; color:var(--muted); font-weight:400; }
+  .ghs-field input[type=text], .ghs-field input[type=password]{
+    width:100%; box-sizing:border-box; font-family:inherit; font-size:14px; padding:9px 11px;
+    border:2px solid var(--border); border-radius:8px; color:var(--navy); background:var(--surface);
+  }
+  .ghs-token-row input{ flex:1; min-width:0; }
+  .ghs-field input:focus{ outline:none; border-color:var(--gold); }
+  .ghs-field input[aria-invalid=true]{ border-color:#B3261E; }
+  .ghs-token-row{ display:flex; gap:6px; }
+  .ghs-token-row button{
+    font-family:inherit; font-size:12px; font-weight:700; border:2px solid var(--border); background:var(--surface-alt);
+    color:var(--navy); border-radius:8px; padding:0 12px; cursor:pointer;
+  }
+  .ghs-check{ display:flex; align-items:center; gap:7px; font-size:13px; font-weight:600; color:var(--navy); cursor:pointer; }
+  #ghs-error{ margin:12px 0 0; font-size:13px; font-weight:700; color:#B3261E; line-height:1.4; }
+  #ghs-error:empty{ display:none; }
+  #ghs-error.warn{ color:#6B4E00; background:#FFF6D6; border:1px solid var(--gold); border-radius:8px; padding:8px 10px; font-weight:600; }
+  #ghs-status{ margin:10px 0 0; font-size:12.5px; color:var(--muted); }
+  #ghs-status:empty{ display:none; }
+  .ghs-actions{ display:flex; gap:8px; margin-top:14px; }
+  .ghs-actions .ghs-primary{
+    flex:1; background:var(--navy); color:#fff; border:none; border-radius:8px; font-family:inherit;
+    font-weight:700; font-size:14px; padding:11px 22px; cursor:pointer;
+  }
+  .ghs-actions .ghs-primary:hover{ background:var(--navy-deep); }
+  .ghs-actions .ghs-secondary{
+    font-family:inherit; font-weight:700; font-size:13px; padding:10px 16px; border-radius:8px; cursor:pointer;
+    border:2px solid var(--navy); background:var(--surface); color:var(--navy);
+  }
+  .ghs-note{ font-size:11.5px; color:var(--muted); line-height:1.5; background:var(--bg); border:1px dashed var(--border); border-radius:7px; padding:8px 10px; margin-top:14px; }
+  .ghs-note a{ color:var(--navy); font-weight:700; }
+  .ghs-skip-wrap{ text-align:center; margin-top:14px; }
+  .ghs-linklike{ background:none; border:none; font-family:inherit; font-size:11.5px; color:var(--muted); text-decoration:underline; cursor:pointer; padding:4px; }
+  .ghs-linklike:hover{ color:var(--navy); }
+  #ghs-skip-confirm{ margin-top:10px; font-size:12.5px; color:var(--text); background:#FFF6D6; border:1px solid var(--gold); border-radius:8px; padding:10px 12px; line-height:1.5; text-align:left; }
+  #ghs-skip-confirm[hidden]{ display:none; }
+  #ghs-skip-confirm .ghs-actions{ margin-top:8px; justify-content:flex-end; }
+  @media (max-width:520px){
+    #ghs-screen{ padding:10px; }
+    #ghs-card{ padding:20px 16px 16px; }
+    .ghs-grid{ grid-template-columns:1fr; }
+    .ghs-actions{ flex-direction:column-reverse; }
+    #ghs-skip-confirm .ghs-actions{ flex-direction:column; }
+  }
+
   /* ---------- CONTRASEÑA Y CONFIGURACIÓN DE AULAS ---------- */
   .pw-scrim, .cfg-scrim{
     display:none; position:fixed; inset:0; z-index:5200; background:rgba(10,20,40,.72);
@@ -1038,6 +1123,10 @@
   }
   .cfg-save:hover{ background:var(--navy-deep); }
   .cfg-add{ background:var(--surface); color:var(--navy); border-color:var(--gold); margin-top:4px; }
+  .cfg-titulo{ display:grid; grid-template-columns:minmax(0,1fr) auto auto; gap:8px; align-items:center; padding:8px 10px; border:1px solid var(--border); border-radius:10px; margin-bottom:7px; background:var(--surface-alt); }
+  .cfg-titulo label{ grid-column:1 / -1; font-size:12px; font-weight:700; color:var(--navy); }
+  .cfg-restore{ font-family:inherit; font-weight:700; font-size:12.5px; border-radius:8px; cursor:pointer; padding:8px 14px; background:var(--surface); color:var(--navy); border:2px solid var(--gold); }
+  .cfg-titulo .cfg-count{ grid-column:1 / -1; font-size:11px; color:var(--muted); }
   .cfg-msg{ grid-column:1 / -1; font-size:12px; }
   .cfg-msg:empty{ display:none; }
   .cfg-msg.ok{ color:#2E7D32; font-weight:700; }
@@ -1045,6 +1134,8 @@
   .cfg-sync{ font-size:12px; color:var(--muted); margin:10px 0 4px; min-height:16px; }
   @media (max-width:720px){
     .cfg-row{ grid-template-columns:44px 1fr; }
+    .cfg-titulo{ grid-template-columns:1fr 1fr; }
+    .cfg-titulo .cfg-name{ grid-column:1 / -1; }
     .cfg-row > *:nth-child(n+3){ grid-column:1 / -1; }
   }
 </style>
@@ -1055,6 +1146,7 @@
   <div id="user-select-card">
     <div class="crest" style="margin:0 auto 14px auto;">NS</div>
     <h1>Sistema de Anotación Cartográfica</h1>
+    <div id="user-select-org"></div>
     <p id="user-select-subtitle">Seleccione el usuario que va a operar esta sesión</p>
     <div id="user-name-step" style="display:none;">
       <p>Antes de continuar, ingrese su nombre. Quedará registrado en este navegador y será visible para los demás usuarios conectados.</p>
@@ -1063,6 +1155,64 @@
     </div>
     <div id="aula-grid"></div>
   </div>
+</div>
+
+<div id="ghs-screen" class="hide" role="dialog" aria-modal="true" aria-labelledby="ghs-title">
+  <form id="ghs-card" novalidate autocomplete="off">
+    <div class="pw-crest">&#128273;</div>
+    <h1 id="ghs-title">Configuración inicial de sincronización</h1>
+    <p class="ghs-lead" id="ghs-lead"></p>
+    <div class="ghs-grid">
+      <div class="ghs-field">
+        <label for="ghs-user">Usuario de GitHub (propietario)</label>
+        <input type="text" id="ghs-user" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="usuario" aria-describedby="ghs-error">
+      </div>
+      <div class="ghs-field">
+        <label for="ghs-repo">Repositorio</label>
+        <input type="text" id="ghs-repo" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="nombre-del-repositorio" aria-describedby="ghs-error">
+      </div>
+      <div class="ghs-field wide" style="margin-top:-4px;"><span class="ghs-help">También puede pegar <b>usuario/repositorio</b> o la dirección completa de github.com en el campo Repositorio.</span></div>
+      <div class="ghs-field">
+        <label for="ghs-branch">Rama</label>
+        <input type="text" id="ghs-branch" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="main" aria-describedby="ghs-error">
+      </div>
+      <div class="ghs-field">
+        <label for="ghs-path">Ruta de datos</label>
+        <input type="text" id="ghs-path" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="data/estado.json" aria-describedby="ghs-error">
+      </div>
+      <div class="ghs-field wide">
+        <label for="ghs-token">Token de acceso personal</label>
+        <div class="ghs-token-row">
+          <input type="password" id="ghs-token" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Pegue aquí su token" aria-describedby="ghs-error">
+          <button type="button" id="ghs-toggle" aria-pressed="false" aria-label="Mostrar u ocultar el token">Mostrar</button>
+        </div>
+      </div>
+      <div class="ghs-field wide">
+        <label class="ghs-check"><input type="checkbox" id="ghs-auto" checked> Sincronización automática</label>
+      </div>
+    </div>
+    <div id="ghs-error" role="alert" aria-live="assertive"></div>
+    <div id="ghs-status" role="status" aria-live="polite"></div>
+    <div class="ghs-actions">
+      <button type="button" class="ghs-secondary" id="ghs-cancel" hidden>Cancelar</button>
+      <button type="submit" class="ghs-primary" id="ghs-test-btn">Probar y guardar</button>
+    </div>
+    <div class="ghs-note">
+      &#128274; El token se guarda <b>solo en este navegador</b>; nunca viaja en el enlace ni se publica en el repositorio.
+      Use un token <b>fine-grained limitado a este único repositorio</b>, con el permiso <b>Contents: Read and write</b>.
+      <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">Crear un token en GitHub &#8599;</a>
+    </div>
+    <div class="ghs-skip-wrap" id="ghs-skip-wrap">
+      <button type="button" class="ghs-linklike" id="ghs-skip">Continuar sin sincronizar (solo este navegador)</button>
+      <div id="ghs-skip-confirm" role="alertdialog" aria-labelledby="ghs-skip-text" hidden>
+        <div id="ghs-skip-text">Sin sincronización, lo que haga <b>no se compartirá</b> con los demás equipos y se usará la configuración local por defecto (aulas y contraseñas). Esta pantalla volverá a aparecer en su próxima visita hasta que configure la sincronización.</div>
+        <div class="ghs-actions">
+          <button type="button" class="ghs-secondary" id="ghs-skip-no">Volver</button>
+          <button type="button" class="ghs-secondary" id="ghs-skip-yes">Continuar sin sincronizar</button>
+        </div>
+      </div>
+    </div>
+  </form>
 </div>
 
 <div class="pw-scrim" id="pw-scrim">
@@ -1097,7 +1247,7 @@
     </button>
     <div>
       <h1>Sistema de Anotación Cartográfica</h1>
-      <div class="subtitle">División de Ejército III, Colombia</div>
+      <div class="subtitle" id="header-subtitle">División de Ejército III, Colombia</div>
     </div>
   </div>
   <div class="mode-switcher">
@@ -1217,6 +1367,7 @@
         <input type="checkbox" id="gh-autosync-input" checked> Sincronización automática
       </label>
       <button class="primary-btn" id="gh-save-config-btn">Guardar configuración</button>
+      <button class="outline-btn" id="gh-wizard-btn" type="button" title="Abre el asistente: verifica el token, el repositorio y la rama antes de guardar">&#128273; Asistente: probar conexión y guardar</button>
       <div class="hint">💡 Como no vas a copiar y pegar aquí el mismo token que compartiste antes (por seguridad, revócalo y genera uno nuevo), solo falta que lo pegues en el campo de arriba la primera vez que abras la página en cada dispositivo — el resto ya queda listo.</div>
       <div class="gh-actions">
         <button class="outline-btn" id="gh-push-btn">⇧ Subir cambios</button>
@@ -1612,10 +1763,12 @@
 <div id="clima-panel">
   <div id="clima-toolbar">
     <button class="primary-btn" id="clima-center-btn">📍 Centrar en mi mapa</button>
-    <label id="clima-overlay-toggle-label" title="Arrastre o haga zoom sobre el mapa para mover Windy junto con los calcos"><input type="checkbox" id="clima-overlay-toggle" checked> Ver calcos</label>
+    <label id="clima-overlay-toggle-label" title="Mostrar u ocultar los calcos sobre Windy"><input type="checkbox" id="clima-overlay-toggle" checked> Ver calcos</label>
+    <button class="outline-btn" id="clima-zoom-out" title="Alejar (Windy y calcos)">&minus;</button>
+    <button class="outline-btn" id="clima-zoom-in" title="Acercar (Windy y calcos)">+</button>
+    <label id="clima-nav-toggle-label" title="Si lo activa, arrastrar/rueda mueve el mapa y Windy lo sigue; mientras esté activo los controles de Windy no se pueden pulsar"><input type="checkbox" id="clima-nav-toggle"> Mover mapa con calcos</label>
   </div>
   <iframe id="clima-iframe" title="Clima (Windy)" allow="geolocation"></iframe>
-  <div id="clima-overlay-map"></div>
 </div>
 
 <div id="personal-panel">
@@ -1626,6 +1779,18 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.5.0/turf.min.js"></script>
 <script>
+/* ============================================================================================
+   CONFIGURACIÓN COMPARTIDA DE AULAS (lectura pública, sin token)
+   El Inicio lee 'aulas_config.json' del repositorio de GitHub ANTES del login. Requiere repositorio PÚBLICO.
+   Origen del repositorio (en este orden): 1) sincronización con GitHub ya configurada en este navegador;
+   2) parámetro de enlace ?cfgrepo=usuario/repo (se recuerda en este navegador);
+   3) esta constante (opcional; déjela vacía para autodetectar);
+   4) autodetección en GitHub Pages: https://<usuario>.github.io/<repo>/  ->  <usuario>/<repo>.
+   Si la página NO está en GitHub Pages (dominio propio, archivo local), complete 'repo' (p. ej. 'miusuario/mirepo').
+   'branch' vacío = rama por defecto del repositorio; 'path' vacío = 'data/estado.json' (igual que la sincronización),
+   de modo que el archivo leído es 'data/estado/aulas_config.json'.
+   ============================================================================================ */
+var AULAS_PUBLIC_CONFIG = { repo: '', branch: '', path: '' };
 (function(){
 
   /* ---------------- TEMA VISUAL (Clásico / Digital) ---------------- */
@@ -1731,6 +1896,10 @@
   var AULAS_CFG_KEY = 'aulas_config_v1';
   var DEFAULT_PASSWORD = 'admin';
   var AULA_NAME_MAX = 30;
+  var AULAS_TITULO_DEFAULT = 'División de Ejército III, Colombia';
+  var AULAS_TITULO_DEFAULT_CORTO = 'División de Ejército III'; // forma usada en <title> y en 'fuente' cuando el título es el predeterminado
+  var AULAS_TITULO_MAX = 80;
+  var APP_NOMBRE = 'Sistema de Anotación Cartográfica';
   var aulasCfg = null;
   var aulasCfgSyncStatus = '';
 
@@ -1770,9 +1939,12 @@
     }
     return H.map(function(x){ return ('00000000' + (x>>>0).toString(16)).slice(-8); }).join('');
   }
-  function aulasPwHash(pw, salt, key){
+  // Iteraciones del hash: las contraseñas guardadas sin campo 'i' usan 1500 (versión anterior, siguen siendo válidas).
+  var AULAS_PW_ITER_LEGACY = 1500, AULAS_PW_ITER_CURRENT = 12000, AULAS_PW_ITER_MAX = 100000, AULAS_PW_MIN_LEN = 6;
+  function aulasPwHash(pw, salt, key, iters){
+    iters = iters || AULAS_PW_ITER_LEGACY;
     var hsh = sha256Hex(salt + '|' + key + '|' + pw);
-    for (var i=0;i<1500;i++) hsh = sha256Hex(hsh + salt + pw);
+    for (var i=0;i<iters;i++) hsh = sha256Hex(hsh + salt + pw);
     return hsh;
   }
   function aulasNewSalt(){
@@ -1792,12 +1964,21 @@
     return s || fallback;
   }
   function aulaDefaultName(id){ return 'AULA ' + id; }
+  // Título (encabezado): sin HTML ni control, espacios colapsados, máx. 80; vacío -> predeterminado.
+  function aulasSanitizeTitle(raw){
+    var s = String(raw == null ? '' : raw).replace(/<[^>]*>/g, '').replace(/[\u0000-\u001f\u007f<>]/g, ' ').replace(/\s+/g, ' ').trim();
+    if (s.length > AULAS_TITULO_MAX) s = s.slice(0, AULAS_TITULO_MAX).trim();
+    return s || AULAS_TITULO_DEFAULT;
+  }
   function aulasValidPw(p){
-    return p && typeof p === 'object' && typeof p.s === 'string' && typeof p.h === 'string' && /^[0-9a-f]{64}$/.test(p.h) ? { s: p.s, h: p.h } : null;
+    if (!(p && typeof p === 'object' && typeof p.s === 'string' && typeof p.h === 'string' && /^[0-9a-f]{64}$/.test(p.h))) return null;
+    var out = { s: p.s, h: p.h };
+    if (typeof p.i === 'number' && isFinite(p.i) && p.i >= 1) out.i = Math.min(Math.floor(p.i), AULAS_PW_ITER_MAX);
+    return out;
   }
   function aulasDefaultConfig(){
     return {
-      v: 1, updatedAt: 0,
+      v: 1, updatedAt: 0, titulo: AULAS_TITULO_DEFAULT,
       direccion: { name: 'DIRECCIÓN', pw: null },
       aulas: AULAS_BASE_IDS.map(function(id){ return { id: id, name: aulaDefaultName(id), visible: true, pw: null }; })
     };
@@ -1812,7 +1993,7 @@
   function aulasNormalizeConfig(raw){
     var def = aulasDefaultConfig();
     if (!raw || typeof raw !== 'object') return def;
-    var cfg = { v: 1, updatedAt: (typeof raw.updatedAt === 'number' && isFinite(raw.updatedAt)) ? raw.updatedAt : 0, direccion: null, aulas: [] };
+    var cfg = { v: 1, updatedAt: (typeof raw.updatedAt === 'number' && isFinite(raw.updatedAt)) ? raw.updatedAt : 0, titulo: aulasSanitizeTitle(raw.titulo), direccion: null, aulas: [] };
     var rd = raw.direccion && typeof raw.direccion === 'object' ? raw.direccion : {};
     cfg.direccion = { name: aulasSanitizeName(rd.name, 'DIRECCIÓN'), pw: aulasValidPw(rd.pw) };
     var seen = {};
@@ -1839,6 +2020,20 @@
     aulasCfg = cfg;
     AULAS.length = 0;
     cfg.aulas.forEach(function(a){ AULAS.push(a.id); });
+    try{ aulasRenderTitulo(); } catch(err){}
+  }
+  function aulasTitulo(){ return aulasCfg && aulasCfg.titulo ? aulasCfg.titulo : AULAS_TITULO_DEFAULT; }
+  // Forma compuesta para <title> y 'fuente': con el título predeterminado conserva el texto histórico.
+  function aulasTituloCorto(){ var t = aulasTitulo(); return t === AULAS_TITULO_DEFAULT ? AULAS_TITULO_DEFAULT_CORTO : t; }
+  function aulasFuenteText(){ return APP_NOMBRE + ' - ' + aulasTituloCorto(); }
+  // Aplica el título a todos los lugares visibles (textContent: sin HTML).
+  function aulasRenderTitulo(){
+    var t = aulasTitulo();
+    var sub = document.getElementById('header-subtitle');
+    if (sub){ sub.textContent = t; sub.title = t; }
+    document.title = APP_NOMBRE + ' · ' + aulasTituloCorto();
+    var org = document.getElementById('user-select-org');
+    if (org){ org.textContent = aulasInicioLoading ? '' : t; }
   }
   function aulasLoadLocal(){
     var raw = null;
@@ -1881,17 +2076,18 @@
     if (!target) return false;
     pw = String(pw == null ? '' : pw);
     if (!target.pw) return pw === DEFAULT_PASSWORD;
-    return aulasPwHash(pw, target.pw.s, kind === 'direccion' ? 'direccion' : id) === target.pw.h;
+    return aulasPwHash(pw, target.pw.s, kind === 'direccion' ? 'direccion' : id, target.pw.i || AULAS_PW_ITER_LEGACY) === target.pw.h;
   }
   function aulasSetPassword(kind, id, pw){
     if (!aulasCfg) aulasLoadLocal();
     pw = String(pw == null ? '' : pw);
     if (!pw) return { ok:false, error:'La contraseña no puede estar vacía.' };
+    if (pw.length < AULAS_PW_MIN_LEN) return { ok:false, error:'La contraseña nueva debe tener al menos ' + AULAS_PW_MIN_LEN + ' caracteres.' };
     if (pw.length > 64) return { ok:false, error:'La contraseña es demasiado larga (máximo 64 caracteres).' };
     var target = kind === 'direccion' ? aulasCfg.direccion : aulasEntry(id);
     if (!target) return { ok:false, error:'Aula inexistente.' };
     var salt = aulasNewSalt();
-    target.pw = { s: salt, h: aulasPwHash(pw, salt, kind === 'direccion' ? 'direccion' : id) };
+    target.pw = { s: salt, h: aulasPwHash(pw, salt, kind === 'direccion' ? 'direccion' : id, AULAS_PW_ITER_CURRENT), i: AULAS_PW_ITER_CURRENT };
     return aulasCommit();
   }
   function aulasSetName(kind, id, name){
@@ -1902,6 +2098,11 @@
       if (!e) return { ok:false, error:'Aula inexistente.' };
       e.name = aulasSanitizeName(name, aulaDefaultName(id));
     }
+    return aulasCommit();
+  }
+  function aulasSetTitle(raw){
+    if (!aulasCfg) aulasLoadLocal();
+    aulasCfg.titulo = aulasSanitizeTitle(raw);
     return aulasCommit();
   }
   function aulasSetVisible(id, visible){
@@ -1936,8 +2137,183 @@
 
   /* --- Copia compartida opcional en el repositorio de GitHub (solo si esta sesión tiene la sincronización configurada) --- */
   var aulasRemoteSha = null;
-  function aulasRemotePath(){ return githubConfig.path.replace(/\.json$/i, '') + '/aulas_config.json'; }
+  function aulasPathFor(syncPath){ return String(syncPath).replace(/\.json$/i, '') + '/aulas_config.json'; }
+  function aulasRemotePath(){ return aulasPathFor(githubConfig.path); }
+  var aulasLastPushOk = null;
   function aulasRemoteAvailable(){ return typeof fetch === 'function' && githubConfigured(); }
+
+  /* --- Lectura PÚBLICA de la configuración compartida (sin token; el repositorio debe ser público) --- */
+  var AULAS_REMOTE_CACHE_KEY = 'aulas_config_remote_cache_v1';
+  var AULAS_CFGREPO_KEY = 'aulas_cfgrepo_v1';
+  var AULAS_DEFAULT_SYNC_PATH = 'data/estado.json'; // mismo valor por defecto que la sincronización con GitHub
+  var AULAS_FETCH_TIMEOUT_MS = 4000;
+  var aulasInicioLoading = false;
+  var aulasPublicState = { phase: 'idle', source: null, detail: '' }; // idle|pending|ok|cache|notfound|error|nosource|token
+  function aulasRepoOk(r){ return typeof r === 'string' && /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(r); }
+  function aulasPageLocation(){
+    try{ return { hostname: location.hostname || '', pathname: location.pathname || '/', search: location.search || '' }; }
+    catch(err){ return { hostname: '', pathname: '/', search: '' }; }
+  }
+  // <usuario>.github.io/<repo>/…  ->  usuario/repo ;  <usuario>.github.io/  ->  usuario/usuario.github.io ; otros hosts -> ''
+  function aulasDeriveRepoFromUrl(hostname, pathname){
+    var m = /^([a-z0-9-]+)\.github\.io$/i.exec(String(hostname || ''));
+    if (!m) return '';
+    var segs = String(pathname || '/').split('/').filter(Boolean);
+    var first = segs[0], repo, user = m[1].toLowerCase();
+    if (!first || (segs.length === 1 && /\.html?$/i.test(first))) repo = user + '/' + user + '.github.io';
+    else { try{ first = decodeURIComponent(first); }catch(err){} repo = user + '/' + first; }
+    return aulasRepoOk(repo) ? repo : '';
+  }
+  // ?cfgrepo=usuario/repo : valor del parámetro ('' si no hay), o null si el parámetro no está presente.
+  function aulasParseCfgRepoParam(search){
+    var m = /[?&]cfgrepo=([^&#]*)/.exec(String(search || ''));
+    if (!m) return null;
+    var v = '';
+    try{ v = decodeURIComponent(m[1]).trim().replace(/^\/+|\/+$/g, ''); }catch(err){ return ''; }
+    return aulasRepoOk(v) ? v : '';
+  }
+  // Devuelve el repositorio de anulación manual (parámetro del enlace o el recordado en este navegador).
+  function aulasCfgRepoOverride(){
+    var fromUrl = aulasParseCfgRepoParam(aulasPageLocation().search);
+    try{
+      if (fromUrl) localStorage.setItem(AULAS_CFGREPO_KEY, fromUrl);
+      else if (fromUrl === '' ) localStorage.removeItem(AULAS_CFGREPO_KEY); // ?cfgrepo= vacío/inválido: olvida la anulación
+    } catch(err){}
+    if (fromUrl) return fromUrl;
+    try{ var st = localStorage.getItem(AULAS_CFGREPO_KEY); return aulasRepoOk(st) ? st : ''; } catch(err){ return ''; }
+  }
+  function aulasPublicSource(){
+    var gh = githubConfig;
+    if (gh && aulasRepoOk(gh.repo)) return { repo: gh.repo, branch: gh.branch || '', syncPath: gh.path || AULAS_DEFAULT_SYNC_PATH, origin: 'config' };
+    var ov = aulasCfgRepoOverride();
+    if (ov) return { repo: ov, branch: '', syncPath: AULAS_DEFAULT_SYNC_PATH, origin: 'param' };
+    var c = AULAS_PUBLIC_CONFIG;
+    if (c && aulasRepoOk(c.repo)) return { repo: c.repo, branch: c.branch || '', syncPath: c.path || AULAS_DEFAULT_SYNC_PATH, origin: 'const' };
+    var loc = aulasPageLocation();
+    var r = aulasDeriveRepoFromUrl(loc.hostname, loc.pathname);
+    if (r) return { repo: r, branch: '', syncPath: AULAS_DEFAULT_SYNC_PATH, origin: 'pages' };
+    return null;
+  }
+  function aulasSourceText(src){ return src.repo + ' / ' + aulasPathFor(src.syncPath) + (src.branch ? ' (rama ' + src.branch + ')' : ''); }
+  function aulasReadCache(src){
+    try{
+      var c = JSON.parse(localStorage.getItem(AULAS_REMOTE_CACHE_KEY) || 'null');
+      if (c && c.repo === src.repo && c.cfg && typeof c.cfg === 'object') return aulasNormalizeConfig(c.cfg);
+    } catch(err){}
+    return null;
+  }
+  function aulasWriteCache(src, cfg){
+    try{ localStorage.setItem(AULAS_REMOTE_CACHE_KEY, JSON.stringify({ repo: src.repo, fetchedAt: Date.now(), cfg: cfg })); } catch(err){}
+  }
+  // Descarga sin autenticación. cb({state:'ok', raw}|{state:'notfound'}|{state:'error', reason}). Nunca queda colgada (plazo corto).
+  function aulasFetchPublic(src, cb){
+    var done = false, timer = null, ctrl = null;
+    try{ if (typeof AbortController === 'function') ctrl = new AbortController(); }catch(err){ ctrl = null; }
+    function finish(r){
+      if (done) return;
+      done = true; clearTimeout(timer);
+      if (ctrl){ try{ ctrl.abort(); }catch(err){} }
+      cb(r);
+    }
+    timer = setTimeout(function(){ finish({ state:'error', reason:'tiempo de espera agotado' }); }, AULAS_FETCH_TIMEOUT_MS);
+    var path = aulasPathFor(src.syncPath).replace(/^\/+/, '');
+    var encPath = path.split('/').map(encodeURIComponent).join('/');
+    var base = ctrl ? { signal: ctrl.signal } : {};
+    function textOf(res){
+      if (res.status === 404) return { k:'nf' };
+      if (!res.ok) return { k:'err', reason: (res.status === 403 || res.status === 429) ? 'límite de peticiones o acceso denegado (HTTP ' + res.status + ')' : 'HTTP ' + res.status };
+      return null;
+    }
+    function viaRaw(branch){
+      return function(){
+        return fetch('https://raw.githubusercontent.com/' + src.repo + '/' + encodeURIComponent(branch) + '/' + encPath, base).then(function(res){
+          var bad = textOf(res); if (bad) return bad;
+          return res.text().then(function(t){ return { k:'ok', text:t }; });
+        });
+      };
+    }
+    function viaApi(){
+      return fetch('https://api.github.com/repos/' + src.repo + '/contents/' + encPath + (src.branch ? '?ref=' + encodeURIComponent(src.branch) : ''),
+        { signal: base.signal, headers: { 'Accept':'application/vnd.github+json' } }).then(function(res){
+        var bad = textOf(res); if (bad) return bad;
+        return res.json().then(function(d){
+          if (d && typeof d.content === 'string' && d.content) return { k:'ok', text: base64ToUtf8(d.content) };
+          if (d && typeof d.download_url === 'string' && /^https:\/\//.test(d.download_url)){
+            return fetch(d.download_url, base).then(function(r2){
+              var bad2 = textOf(r2); if (bad2) return bad2;
+              return r2.text().then(function(t){ return { k:'ok', text:t }; });
+            });
+          }
+          return { k:'err', reason:'respuesta sin contenido' };
+        });
+      });
+    }
+    // Con rama conocida: raw (rápido, sin límite de la API) y, si falla, la API. Sin rama: API (rama por defecto) y, si falla, raw main/master.
+    var attempts = src.branch
+      ? [ { kind:'raw', f: viaRaw(src.branch) }, { kind:'api', f: viaApi } ]
+      : [ { kind:'api', f: viaApi }, { kind:'raw', f: viaRaw('main') }, { kind:'raw', f: viaRaw('master') } ];
+    function parseAndFinish(text){
+      var obj = null;
+      try{ obj = JSON.parse(text); }catch(err){ obj = null; }
+      if (!obj || typeof obj !== 'object' || (!Array.isArray(obj.aulas) && !(obj.direccion && typeof obj.direccion === 'object'))){
+        finish({ state:'error', reason:'archivo de configuración inválido' });
+      } else finish({ state:'ok', raw: obj });
+    }
+    function run(i, lastErr){
+      if (done) return;
+      if (i >= attempts.length){ finish({ state:'error', reason: lastErr || 'no disponible' }); return; }
+      var p;
+      try{ p = attempts[i].f(); }catch(err){ p = Promise.reject(err); }
+      p.then(function(r){
+        if (done) return;
+        if (r.k === 'ok') return parseAndFinish(r.text);
+        if (r.k === 'nf' && (i === 0 || attempts[i].kind === 'api')) return finish({ state:'notfound' });
+        run(i + 1, r.k === 'err' ? r.reason : lastErr);
+      }, function(err){
+        if (done) return;
+        run(i + 1, (err && err.message) || 'sin conexión');
+      });
+    }
+    run(0, '');
+  }
+  // Carga la configuración compartida antes del login. done(changed). Con token usa la lectura autenticada (más reciente gana);
+  // sin token la copia del repositorio es la autoridad: si carga, se adopta entera (una copia local vieja no la pisa).
+  function aulasLoadPublicConfig(done){
+    done = done || function(){};
+    if (aulasRemoteAvailable()){
+      aulasPublicState = { phase:'token', source: aulasPublicSource(), detail:'' };
+      aulasPullRemote(done);
+      return;
+    }
+    var src = aulasPublicSource();
+    if (!src || typeof fetch !== 'function'){ aulasPublicState = { phase:'nosource', source:null, detail:'' }; done(false); return; }
+    aulasPublicState = { phase:'pending', source: src, detail:'' };
+    var finished = false;
+    aulasFetchPublic(src, function(r){
+      if (finished) return; finished = true;
+      var changed = false;
+      try{
+        if (r.state === 'ok'){
+          var norm = aulasNormalizeConfig(r.raw);
+          aulasWriteCache(src, norm);
+          aulasApplyConfig(norm);
+          aulasSaveLocal();
+          aulasPublicState = { phase:'ok', source: src, detail:'' };
+          changed = true;
+        } else {
+          var cached = aulasReadCache(src);
+          aulasPublicState = { phase: r.state === 'notfound' ? 'notfound' : 'error', source: src, detail: r.reason || '' };
+          // Respaldo: última copia remota guardada (si no es más vieja que la copia local, que puede traer ediciones propias).
+          if (cached && cached.updatedAt >= (aulasCfg ? aulasCfg.updatedAt : 0)){
+            aulasApplyConfig(cached);
+            aulasPublicState.phase = 'cache';
+            changed = true;
+          }
+        }
+      } catch(err){ aulasPublicState = { phase:'error', source: src, detail:'error al aplicar' }; }
+      done(changed);
+    });
+  }
   function aulasPullRemote(done){
     if (!aulasRemoteAvailable()){ if (done) done(false); return; }
     var p;
@@ -1976,8 +2352,8 @@
         .then(function(res){
           if ((res.status === 409 || res.status === 422) && retriesLeft > 0) return aulasPushRemote(retriesLeft - 1);
           return res.json().catch(function(){ return null; }).then(function(d){
-            if (res.ok){ if (d && d.content) aulasRemoteSha = d.content.sha; aulasCfgSyncStatus = 'Guardado y compartido en GitHub.'; }
-            else aulasCfgSyncStatus = 'Guardado en este navegador; no se pudo compartir en GitHub (HTTP ' + res.status + ').';
+            if (res.ok){ aulasLastPushOk = true; if (d && d.content) aulasRemoteSha = d.content.sha; aulasCfgSyncStatus = 'Guardado y compartido en GitHub.'; }
+            else { aulasLastPushOk = false; aulasCfgSyncStatus = 'Guardado en este navegador; no se pudo compartir en GitHub (HTTP ' + res.status + ').'; }
             aulasRefreshStatusLine();
           });
         });
@@ -1986,7 +2362,7 @@
       fetch(githubContentsUrl(path, true), { headers: githubAuthHeaders() })
         .then(function(res){ if (res.status === 404) return null; if (!res.ok) throw new Error('HTTP ' + res.status); return res.json().then(function(d){ return d.sha; }); })
         .then(put)
-        .catch(function(){ aulasCfgSyncStatus = 'Guardado en este navegador; no se pudo compartir en GitHub.'; aulasRefreshStatusLine(); });
+        .catch(function(){ aulasLastPushOk = false; aulasCfgSyncStatus = 'Guardado en este navegador; no se pudo compartir en GitHub.'; aulasRefreshStatusLine(); });
     } catch(err){}
   }
 
@@ -2048,6 +2424,14 @@
     var aulaGrid = document.getElementById('aula-grid');
     if (!aulaGrid) return;
     aulaGrid.innerHTML = '';
+    try{ aulasRenderTitulo(); } catch(err){}
+    if (aulasInicioLoading){
+      var ld = document.createElement('div');
+      ld.className = 'aula-loading'; ld.setAttribute('role', 'status');
+      ld.textContent = 'Cargando configuración…';
+      aulaGrid.appendChild(ld);
+      return;
+    }
     visibleAulaIds().forEach(function(letra){
       var btn = document.createElement('button');
       btn.className = 'aula-btn';
@@ -2058,7 +2442,7 @@
         openPasswordPrompt('aula', letra, function(){
           if (!isAulaVisible(letra)) return; // se ocultó mientras tanto
           userContext = { role:'aula', aula: letra };
-          saveUserContext(userContext);
+          saveUserContext(userContext); ghsMarkInicioSession();
           activateUserContext(inicioOnReady);
         });
       });
@@ -2070,7 +2454,7 @@
     direccionBtn.addEventListener('click', function(){
       openPasswordPrompt('direccion', null, function(){
         userContext = { role:'direccion', visibleAulas: [] };
-        saveUserContext(userContext);
+        saveUserContext(userContext); ghsMarkInicioSession();
         activateUserContext(inicioOnReady);
       });
     });
@@ -2081,6 +2465,28 @@
   function aulasRefreshStatusLine(){
     var el = document.getElementById('cfg-sync-status');
     if (el) el.textContent = aulasCfgSyncStatus || '';
+    aulasRefreshShareLine();
+  }
+  // Estado de intercambio: dónde se comparte la configuración y desde dónde la leen los demás equipos.
+  function aulasRefreshShareLine(){
+    var box = document.getElementById('cfg-share-status');
+    if (!box) return;
+    box.innerHTML = '';
+    function line(cls, txt){ var p = cfgMakeEl('p', 'cfg-share-line ' + cls, txt); box.appendChild(p); return p; }
+    if (aulasRemoteAvailable()){
+      if (aulasLastPushOk === false) line('warn', '⚠ No se pudo compartir en GitHub. Los cambios quedan en este navegador; verifique el token y la conexión.');
+      else line('ok', '✓ Compartida con todos los equipos desde ' + githubConfig.repo + ' (' + aulasRemotePath() + ').');
+    } else {
+      line('warn', 'Estos cambios solo valen en este navegador. Configura la sincronización con GitHub (repo + token) para compartirlos.');
+    }
+    var src = aulasPublicSource();
+    if (src) line('info', 'El Inicio de los demás equipos lee la configuración de: ' + aulasSourceText(src) + '. El repositorio debe ser público.');
+    else line('warn', 'No se encontró repositorio público (el repo debe ser público). Defina AULAS_PUBLIC_CONFIG en index.html, abra el enlace con ?cfgrepo=usuario/repo o configure la sincronización con GitHub.');
+    var ph = aulasPublicState.phase, det = aulasPublicState.detail ? ' (' + aulasPublicState.detail + ')' : '';
+    if (ph === 'ok') line('info', 'Última lectura del repositorio: correcta.');
+    else if (ph === 'notfound') line('warn', 'El archivo aún no existe en el repositorio (o el repositorio es privado). Guarde la configuración con la sincronización activa para publicarlo.');
+    else if (ph === 'cache') line('info', 'No se pudo leer el repositorio' + det + '; se usó la última copia compartida guardada en este navegador.');
+    else if (ph === 'error') line('warn', 'No se pudo leer el repositorio' + det + '; se usa la copia de este navegador.');
   }
   function cfgMakeEl(tag, cls, text){
     var e = document.createElement(tag);
@@ -2090,7 +2496,7 @@
   }
   function cfgPasswordFields(kind, id, msgEl){
     var wrap = cfgMakeEl('div', 'cfg-pw');
-    var p1 = cfgMakeEl('input'); p1.type = 'password'; p1.placeholder = 'Nueva contraseña'; p1.autocomplete = 'new-password'; p1.maxLength = 64; p1.className = 'cfg-pw1';
+    var p1 = cfgMakeEl('input'); p1.type = 'password'; p1.placeholder = 'Nueva (mín. ' + AULAS_PW_MIN_LEN + ')'; p1.autocomplete = 'new-password'; p1.maxLength = 64; p1.className = 'cfg-pw1';
     var p2 = cfgMakeEl('input'); p2.type = 'password'; p2.placeholder = 'Repetir contraseña'; p2.autocomplete = 'new-password'; p2.maxLength = 64; p2.className = 'cfg-pw2';
     wrap.appendChild(p1); wrap.appendChild(p2);
     return { wrap: wrap, p1: p1, p2: p2 };
@@ -2127,6 +2533,35 @@
     if (!body) return;
     body.innerHTML = '';
     body.appendChild(cfgMakeEl('p', 'cfg-intro', 'Los identificadores internos (A, B, C…) son fijos y no cambian. La designación es solo el nombre que se muestra. Un aula oculta no se elimina: conserva sus datos y reaparece al volver a activarla.'));
+
+    // Estado de intercambio (arriba, para que se vea sin desplazarse)
+    var sh = cfgMakeEl('div', 'cfg-share'); sh.id = 'cfg-share-status';
+    body.appendChild(sh);
+    aulasRefreshShareLine();
+
+    // Título (encabezado)
+    var tSec = cfgMakeEl('div', 'cfg-titulo'); tSec.id = 'cfg-titulo-sec';
+    var tLbl = cfgMakeEl('label', null, 'Título (encabezado)'); tLbl.setAttribute('for', 'cfg-titulo-input');
+    var tIn = cfgMakeEl('input', 'cfg-name'); tIn.type = 'text'; tIn.id = 'cfg-titulo-input'; tIn.maxLength = AULAS_TITULO_MAX; tIn.value = aulasTitulo();
+    tIn.placeholder = AULAS_TITULO_DEFAULT;
+    var tSave = cfgMakeEl('button', 'cfg-save', 'Guardar'); tSave.type = 'button'; tSave.id = 'cfg-titulo-save';
+    var tRst = cfgMakeEl('button', 'cfg-restore', 'Restablecer'); tRst.type = 'button'; tRst.id = 'cfg-titulo-restore'; tRst.title = 'Volver a: ' + AULAS_TITULO_DEFAULT;
+    var tMsg = cfgMakeEl('div', 'cfg-msg'); tMsg.id = 'cfg-titulo-msg';
+    function tDone(r, okTxt){
+      tMsg.className = 'cfg-msg ' + (r.ok ? 'ok' : 'err');
+      tMsg.textContent = r.ok ? '✓ ' + okTxt : r.error;
+      tIn.value = aulasTitulo();
+      aulasRefreshStatusLine();
+    }
+    tSave.addEventListener('click', function(){
+      var clean = aulasSanitizeTitle(tIn.value);
+      var empty = !String(tIn.value || '').replace(/<[^>]*>/g, ' ').replace(/[\s\u0000-\u001f\u007f<>]/g, '');
+      tDone(aulasSetTitle(tIn.value), empty ? 'Título vacío: se restableció el predeterminado.' : (clean.length < String(tIn.value).trim().length ? 'Título guardado (ajustado: sin HTML / máx. ' + AULAS_TITULO_MAX + ' caracteres).' : 'Título guardado.'));
+    });
+    tIn.addEventListener('keydown', function(ev){ if (ev.key === 'Enter'){ ev.preventDefault(); tSave.click(); } });
+    tRst.addEventListener('click', function(){ tDone(aulasSetTitle(AULAS_TITULO_DEFAULT), 'Título restablecido al predeterminado.'); });
+    tSec.appendChild(tLbl); tSec.appendChild(tIn); tSec.appendChild(tSave); tSec.appendChild(tRst); tSec.appendChild(tMsg);
+    body.appendChild(tSec);
 
     // Dirección
     var dSec = cfgMakeEl('div', 'cfg-row cfg-row-dir');
@@ -2186,7 +2621,7 @@
     body.appendChild(add);
     var st = cfgMakeEl('div', 'cfg-sync'); st.id = 'cfg-sync-status'; st.textContent = aulasCfgSyncStatus || '';
     body.appendChild(st);
-    body.appendChild(cfgMakeEl('p', 'cfg-note', 'Nota: las contraseñas son una barrera blanda del lado del cliente, no seguridad real. La configuración se guarda en este navegador y, si la sincronización con GitHub está configurada en esta sesión, también en el repositorio para que otros navegadores con acceso la reciban.'));
+    body.appendChild(cfgMakeEl('p', 'cfg-note', 'Nota: las contraseñas son una barrera blanda del lado del cliente, no seguridad real. El archivo de configuración del repositorio es público: contiene solo huellas (hash) de las contraseñas, pero una contraseña débil puede adivinarse. Use al menos ' + AULAS_PW_MIN_LEN + ' caracteres y evite palabras comunes.'));
   }
   function openConfigPanel(){
     if (!userContext || userContext.role !== 'direccion') return;
@@ -2237,16 +2672,269 @@
     return '';
   }
 
-  function initUserSelector(onReady){
+  /* ---------------- ASISTENTE DE CONFIGURACIÓN INICIAL DE SINCRONIZACIÓN (GitHub) ---------------- */
+  // Primera acción en un navegador sin sincronización completa (repo + token): pide usuario, repositorio, rama,
+  // ruta y token, los verifica con GitHub y los guarda con la misma función que el diálogo de configuración.
+  // No hay ningún repositorio fijo en el código: cada despliegue se conecta al suyo.
+  var GHS_SKIP_KEY = 'first_run_setup_skipped_v1';     // sessionStorage: omitido solo durante esta sesión
+  var GHS_INICIO_KEY = 'inicio_session_started_v1';    // localStorage: este navegador ya entró por el Inicio
+  var GHS_TIMEOUT_MS = 15000;
+  var GHS_FIELD_IDS = { user:'ghs-user', repo:'ghs-repo', branch:'ghs-branch', path:'ghs-path', token:'ghs-token' };
+  var ghsState = { mode: 'gate', onDone: null, busy: false, roSig: null };
+
+  function ghsMarkInicioSession(){ try{ localStorage.setItem(GHS_INICIO_KEY, '1'); }catch(err){} }
+  // ¿Hay que mostrar el asistente antes del Inicio? Una sesión guardada que no pasó por el Inicio real
+  // (contexto inyectado, instalaciones anteriores a esta función) no lo muestra.
+  function ghsNeeded(saved){
+    if (githubConfigured()) return false;
+    try{ if (sessionStorage.getItem(GHS_SKIP_KEY) === '1') return false; }catch(err){}
+    if (saved){
+      var viaInicio = false;
+      try{ viaInicio = localStorage.getItem(GHS_INICIO_KEY) === '1'; }catch(err){}
+      if (!viaInicio) return false;
+    }
+    return true;
+  }
+  // Acepta: usuario + nombre; "usuario/repo" en cualquiera de los dos campos; URL https://github.com/usuario/repo(.git)(/tree/…); git@github.com:usuario/repo.git
+  function ghsParseRepoInput(userTxt, repoTxt){
+    var u = String(userTxt == null ? '' : userTxt).trim(), r = String(repoTxt == null ? '' : repoTxt).trim();
+    var URLRE = /^(?:git@github\.com:|(?:https?:\/\/)?(?:www\.)?github\.com\/)([^\/\s?#]+)(?:\/([^\/\s?#]+))?/i;
+    function clean(x){ return String(x || '').replace(/\.git$/i, ''); }
+    var owner = '', name = '', m;
+    if ((m = URLRE.exec(r))){ owner = m[1]; name = clean(m[2]); }
+    else if (r.indexOf('/') !== -1){
+      var parts = r.replace(/^\/+|\/+$/g, '').split('/');
+      if (parts.length !== 2) return { ok:false, field:'repo', msg:'El repositorio debe tener la forma usuario/repositorio o la dirección completa de github.com.' };
+      owner = parts[0]; name = clean(parts[1]);
+    } else name = clean(r);
+    var uOwner = '';
+    if ((m = URLRE.exec(u))){ uOwner = m[1]; if (!name) name = clean(m[2]); }
+    else if (u.indexOf('/') !== -1){
+      var up = u.replace(/^\/+|\/+$/g, '').split('/');
+      if (up.length !== 2) return { ok:false, field:'user', msg:'Indique solo el usuario u organización propietaria (por ejemplo: miusuario).' };
+      uOwner = up[0]; if (!name) name = clean(up[1]);
+    } else uOwner = u.replace(/^@/, '');
+    owner = owner || uOwner;
+    if (!owner) return { ok:false, field:'user', msg:'Escriba el usuario (o la organización) de GitHub propietario del repositorio.' };
+    if (!name) return { ok:false, field:'repo', msg:'Escriba el nombre del repositorio.' };
+    if (!/^[A-Za-z0-9_.-]+$/.test(owner)) return { ok:false, field:'user', msg:'El usuario solo puede contener letras, números, guiones, guion bajo y punto.' };
+    if (!/^[A-Za-z0-9_.-]+$/.test(name) || name === '.' || name === '..') return { ok:false, field:'repo', msg:'El nombre del repositorio solo puede contener letras, números, guiones, guion bajo y punto.' };
+    return { ok:true, owner: owner, name: name, repo: owner + '/' + name };
+  }
+  function ghsValidateInputs(f){
+    var pr = ghsParseRepoInput(f.user, f.repo);
+    if (!pr.ok) return pr;
+    var branch = String(f.branch || '').trim() || 'main';
+    if (!/^[A-Za-z0-9._\/-]+$/.test(branch) || /\.\.|^\/|\/$|\/\//.test(branch)) return { ok:false, field:'branch', msg:'El nombre de la rama no es válido (use letras, números, punto, guion y barras).' };
+    var path = String(f.path || '').trim().replace(/^\/+/, '') || 'data/estado.json';
+    if (/[?#\\]/.test(path) || /(^|\/)\.\.(\/|$)/.test(path) || /\/\//.test(path) || /\/$/.test(path)) return { ok:false, field:'path', msg:'La ruta de datos no es válida (ejemplo: data/estado.json).' };
+    var token = String(f.token || '').trim();
+    if (!token) return { ok:false, field:'token', msg:'Pegue el token de acceso personal de GitHub.' };
+    if (!/^[\x21-\x7E]+$/.test(token)) return { ok:false, field:'token', msg:'El token contiene espacios o caracteres no válidos. Cópielo de nuevo, completo y sin espacios.' };
+    return { ok:true, cfg: normalizeGithubConfig(pr.repo, branch, path, token, !!f.autoSync), owner: pr.owner, name: pr.name };
+  }
+  function ghsRequest(url, token){
+    var ctrl = null, timer = null;
+    try{ if (typeof AbortController === 'function') ctrl = new AbortController(); }catch(err){ ctrl = null; }
+    var p = new Promise(function(resolve, reject){
+      timer = setTimeout(function(){ try{ if (ctrl) ctrl.abort(); }catch(err){} reject({ timeout:true }); }, GHS_TIMEOUT_MS);
+      var opts = { headers: githubHeadersFor(token) };
+      if (ctrl) opts.signal = ctrl.signal;
+      fetch(url, opts).then(function(res){
+        var rem = null;
+        try{ rem = res.headers && res.headers.get ? res.headers.get('x-ratelimit-remaining') : null; }catch(err){}
+        var jp = res.json ? res.json().catch(function(){ return null; }) : Promise.resolve(null);
+        return jp.then(function(body){ resolve({ status: res.status, ok: !!res.ok, body: body, remaining: rem }); });
+      }).catch(reject);
+    });
+    return p.then(function(r){ clearTimeout(timer); return r; }, function(e){ clearTimeout(timer); throw e; });
+  }
+  function ghsHttpMsg(r, cfg){
+    var msg = r.body && r.body.message ? String(r.body.message) : '';
+    if (r.status === 401) return 'El token no es válido, venció o fue revocado (GitHub respondió 401). Genere uno nuevo y péguelo completo.';
+    if (r.status === 429 || (r.status === 403 && (r.remaining === '0' || /rate limit|abuse|secondary/i.test(msg))))
+      return 'GitHub limitó temporalmente las consultas (límite de velocidad). Espere unos minutos e intente de nuevo.';
+    if (r.status === 403) return 'El token no tiene acceso a este repositorio (403). Verifique que el token fine-grained incluya el repositorio ' + cfg.repo + ' y el permiso Contents.';
+    if (r.status === 404) return 'No se encontró el repositorio “' + cfg.repo + '”, o el token no tiene acceso a él. Revise el usuario y el nombre; con un token fine-grained, confirme que este repositorio esté seleccionado.';
+    return 'GitHub respondió con un error inesperado (HTTP ' + r.status + '). Intente de nuevo en unos minutos.';
+  }
+  // Verifica token + repositorio + rama con peticiones reales. NO crea nada: la carpeta de datos se crea en el primer envío.
+  function ghsRunChecks(cfg){
+    var base = 'https://api.github.com/repos/' + cfg.repo;
+    return ghsRequest(base, cfg.token).then(function(r){
+      if (!r.ok) return { ok:false, msg: ghsHttpMsg(r, cfg), field: r.status === 401 ? 'token' : 'repo' };
+      var b = r.body || {};
+      var push = b.permissions && typeof b.permissions.push === 'boolean' ? b.permissions.push : null;
+      var brUrl = base + '/branches/' + cfg.branch.split('/').map(encodeURIComponent).join('/');
+      return ghsRequest(brUrl, cfg.token).then(function(r2){
+        if (r2.status === 404) return { ok:false, field:'branch', msg: 'La rama “' + cfg.branch + '” no existe en ' + cfg.repo + (b.default_branch ? '. La rama predeterminada del repositorio es “' + b.default_branch + '”.' : '.') };
+        if (!r2.ok) return { ok:false, field:'repo', msg: ghsHttpMsg(r2, cfg) };
+        return { ok:true, readOnly: push === false, defaultBranch: b.default_branch || '' };
+      });
+    }).catch(function(err){
+      if (err && err.timeout) return { ok:false, field:null, msg:'GitHub no respondió a tiempo. Revise su conexión e intente de nuevo.' };
+      return { ok:false, field:null, msg:'No hay conexión con GitHub. Revise su conexión a Internet (o el proxy/cortafuegos) e intente de nuevo.' };
+    });
+  }
+  function ghsEl(id){ return document.getElementById(id); }
+  function ghsFieldEl(name){ return GHS_FIELD_IDS[name] ? ghsEl(GHS_FIELD_IDS[name]) : null; }
+  function ghsClearInvalid(){ Object.keys(GHS_FIELD_IDS).forEach(function(n){ var e = ghsFieldEl(n); if (e) e.removeAttribute('aria-invalid'); }); }
+  function ghsShowError(msg, field, warn){
+    var box = ghsEl('ghs-error');
+    box.textContent = msg || '';
+    box.classList.toggle('warn', !!warn);
+    ghsClearInvalid();
+    var el = field ? ghsFieldEl(field) : null;
+    if (el){ el.setAttribute('aria-invalid', 'true'); try{ el.focus(); }catch(err){} }
+  }
+  function ghsSetStatus(txt){ ghsEl('ghs-status').textContent = txt || ''; }
+  function ghsRefreshButtonLabel(){
+    ghsEl('ghs-test-btn').textContent = ghsState.roSig ? 'Continuar en solo lectura' : 'Probar y guardar';
+  }
+  function ghsSetBusy(b){
+    ghsState.busy = b;
+    var btn = ghsEl('ghs-test-btn');
+    btn.disabled = b;
+    btn.setAttribute('aria-busy', b ? 'true' : 'false');
+    if (b) btn.textContent = 'Probando…'; else ghsRefreshButtonLabel();
+  }
+  // Valores iniciales: configuración parcial existente > ?cfgrepo / recordado > AULAS_PUBLIC_CONFIG > derivación de GitHub Pages.
+  function ghsPrefill(){
+    var gh = githubConfig || {};
+    var src = null;
+    try{ src = aulasPublicSource(); }catch(err){ src = null; }
+    var repo = (src && src.repo) || (gh.repo && /\//.test(gh.repo) ? gh.repo : '') || '';
+    var parts = repo.split('/');
+    return {
+      user: parts.length === 2 ? parts[0] : '',
+      repo: parts.length === 2 ? parts[1] : '',
+      branch: gh.branch || (src && src.branch) || 'main',
+      path: gh.path || (src && src.syncPath) || AULAS_DEFAULT_SYNC_PATH,
+      token: gh.token || '',
+      autoSync: gh.autoSync === undefined ? true : !!gh.autoSync
+    };
+  }
+  function ghsOpen(mode, onDone){
+    ghsState = { mode: mode, onDone: onDone || null, busy: false, roSig: null };
+    var v = ghsPrefill();
+    ghsEl('ghs-user').value = v.user; ghsEl('ghs-repo').value = v.repo;
+    ghsEl('ghs-branch').value = v.branch; ghsEl('ghs-path').value = v.path;
+    ghsEl('ghs-token').value = v.token; ghsEl('ghs-auto').checked = v.autoSync;
+    ghsEl('ghs-token').type = 'password'; ghsEl('ghs-toggle').textContent = 'Mostrar'; ghsEl('ghs-toggle').setAttribute('aria-pressed', 'false');
+    ghsShowError('', null); ghsSetStatus(''); ghsSetBusy(false);
+    ghsEl('ghs-skip-confirm').hidden = true;
+    var gate = mode === 'gate';
+    ghsEl('ghs-skip-wrap').style.display = gate ? '' : 'none';
+    ghsEl('ghs-cancel').hidden = gate;
+    ghsEl('ghs-lead').textContent = gate
+      ? 'Para compartir el mapa y la configuración con los demás equipos, conecte este navegador al repositorio de GitHub. Se hace una sola vez por navegador, antes del primer uso.'
+      : 'Verifique el token, el repositorio y la rama con GitHub antes de guardar la sincronización.';
+    ghsEl('ghs-screen').classList.remove('hide');
+    var order = ['ghs-user', 'ghs-repo', 'ghs-token', 'ghs-branch', 'ghs-path'];
+    var target = order.filter(function(id){ return !ghsEl(id).value.trim(); })[0] || 'ghs-token';
+    try{ ghsEl(target).focus(); }catch(err){}
+  }
+  function ghsClose(){ ghsEl('ghs-screen').classList.add('hide'); }
+  function ghsFinish(){
+    ghsClose();
+    ghsEl('ghs-token').value = '';
+    var cb = ghsState.onDone;
+    ghsState.onDone = null;
+    if (ghsState.mode === 'settings'){
+      githubFileSha = null;
+      try{ fillGithubConfigInputs(); }catch(err){}
+      githubPull(true);
+      direccionBroadcastCache = null;
+      loadDireccionBroadcastPanel();
+    }
+    if (cb) cb();
+  }
+  function ghsSubmit(){
+    if (ghsState.busy) return;
+    ghsShowError('', null);
+    var v = ghsValidateInputs({
+      user: ghsEl('ghs-user').value, repo: ghsEl('ghs-repo').value, branch: ghsEl('ghs-branch').value,
+      path: ghsEl('ghs-path').value, token: ghsEl('ghs-token').value, autoSync: ghsEl('ghs-auto').checked
+    });
+    if (!v.ok){ ghsShowError(v.msg, v.field); return; }
+    // Si se pegó usuario/repo o una URL, deja los campos en su forma canónica.
+    ghsEl('ghs-user').value = v.owner; ghsEl('ghs-repo').value = v.name;
+    var cfg = v.cfg;
+    var sig = JSON.stringify([cfg.repo, cfg.branch, cfg.token]);
+    ghsSetBusy(true);
+    ghsSetStatus('Verificando token, repositorio y rama en GitHub…');
+    ghsRunChecks(cfg).then(function(res){
+      if (!res.ok){ ghsState.roSig = null; ghsSetBusy(false); ghsSetStatus(''); ghsShowError(res.msg, res.field); return; }
+      if (res.readOnly && ghsState.roSig !== sig){
+        ghsState.roSig = sig;
+        ghsSetBusy(false); ghsSetStatus('');
+        ghsShowError('Este token solo tiene permiso de lectura sobre ' + cfg.repo + ': podrá ver los datos compartidos, pero no podrá subir cambios. Para guardar cambios cree un token con Contents: Read and write. Si desea continuar en solo lectura, pulse “Continuar en solo lectura”.', null, true);
+        return;
+      }
+      applyGithubConfig(cfg);
+      ghsSetStatus('Conexión verificada. Descargando la configuración compartida…');
+      var proceeded = false, guard = null;
+      function proceed(){ if (proceeded) return; proceeded = true; clearTimeout(guard); ghsSetBusy(false); ghsSetStatus(''); ghsFinish(); }
+      guard = setTimeout(proceed, GHS_TIMEOUT_MS);
+      try{ aulasPullRemote(function(){ proceed(); }); } catch(err){ proceed(); }
+    });
+  }
+  (function ghsWire(){
+    var form = ghsEl('ghs-card');
+    if (!form) return;
+    form.addEventListener('submit', function(ev){ ev.preventDefault(); ghsSubmit(); });
+    ['ghs-user','ghs-repo','ghs-branch','ghs-path','ghs-token','ghs-auto'].forEach(function(id){
+      ghsEl(id).addEventListener('input', function(){
+        if (ghsState.roSig){ ghsState.roSig = null; ghsRefreshButtonLabel(); ghsShowError('', null); }
+        else if (ghsEl('ghs-error').textContent){ ghsClearInvalid(); }
+      });
+    });
+    ghsEl('ghs-toggle').addEventListener('click', function(){
+      var inp = ghsEl('ghs-token'), show = inp.type === 'password';
+      inp.type = show ? 'text' : 'password';
+      this.textContent = show ? 'Ocultar' : 'Mostrar';
+      this.setAttribute('aria-pressed', show ? 'true' : 'false');
+      inp.focus();
+    });
+    ghsEl('ghs-skip').addEventListener('click', function(){ ghsEl('ghs-skip-confirm').hidden = false; ghsEl('ghs-skip-no').focus(); });
+    ghsEl('ghs-skip-no').addEventListener('click', function(){ ghsEl('ghs-skip-confirm').hidden = true; ghsEl('ghs-skip').focus(); });
+    ghsEl('ghs-skip-yes').addEventListener('click', function(){
+      try{ sessionStorage.setItem(GHS_SKIP_KEY, '1'); }catch(err){}
+      var cb = ghsState.onDone; ghsState.onDone = null;
+      ghsClose();
+      if (cb) cb();
+    });
+    ghsEl('ghs-cancel').addEventListener('click', function(){ if (!ghsState.busy) ghsClose(); });
+    document.addEventListener('keydown', function(ev){
+      if (ev.key === 'Escape' && ghsState.mode === 'settings' && !ghsState.busy && !ghsEl('ghs-screen').classList.contains('hide')) ghsClose();
+    });
+    var wiz = document.getElementById('gh-wizard-btn');
+    if (wiz) wiz.addEventListener('click', function(){ ghsOpen('settings', null); });
+  })();
+
+  function initUserSelector(onReady, afterSetup){
     var screen = document.getElementById('user-select-screen');
     inicioOnReady = onReady;
     aulasLoadLocal();
-    try{ loadGithubConfig(); }catch(err){}
-    renderInicioButtons();
-    // Si hay sincronización con GitHub configurada en este navegador, intenta traer la configuración compartida.
-    aulasPullRemote();
-
+    if (!afterSetup){ try{ loadGithubConfig(); }catch(err){} }
     var saved = loadUserContext();
+    // Primera acción en un navegador sin sincronización: configurar GitHub antes de cualquier otra cosa.
+    if (!afterSetup && ghsNeeded(saved)){
+      screen.classList.add('hide');
+      ghsOpen('gate', function(){ initUserSelector(onReady, true); });
+      return;
+    }
+    // Sin sesión guardada y sin token: el Inicio espera (plazo corto) a la configuración compartida del repositorio
+    // para no mostrar aulas ocultas ni contraseñas obsoletas. Con sesión guardada la carga ocurre en segundo plano.
+    aulasInicioLoading = !saved && !aulasRemoteAvailable() && typeof fetch === 'function' && !!aulasPublicSource();
+    renderInicioButtons();
+    aulasLoadPublicConfig(function(changed){
+      aulasInicioLoading = false;
+      renderInicioButtons();
+      if (changed){ try{ aulasOnConfigChanged(); }catch(err){} }
+      aulasRefreshStatusLine();
+    });
+
     // Una sesión guardada en un aula que Dirección ocultó (o que ya no existe) no se reanuda: vuelve al Inicio.
     if (saved && saved.role === 'aula' && !isAulaVisible(saved.aula)){
       try{ localStorage.removeItem(USER_CONTEXT_KEY); }catch(err){}
@@ -2511,6 +3199,7 @@
     if (direccionBroadcastLoaded){ renderDireccionBroadcastList(); return; }
     if (direccionBroadcastLoading) return;
     direccionBroadcastLoading = true;
+    clearBroadcastLayers();   // una recarga reemplaza el overlay anterior (sin duplicar capas ni companions)
     var basePath = direccionBroadcastBasePath();
     var indexState = null;
     fetch(githubContentsUrl(basePath + '/index.json', true), { headers: githubAuthHeaders() })
@@ -2555,6 +3244,14 @@
         direccionBroadcastLoading = false;
         console.error('No se pudieron cargar las capas de Dirección:', err);
       });
+  }
+
+  /* Retira del mapa el overlay de Dirección (grupos y companions) y vacía la lista. */
+  function clearBroadcastLayers(){
+    if (!broadcastLayers.length) return;
+    broadcastLayers.forEach(function(l){ setLayerCompanionsVisible(l, false); map.removeLayer(l.group); });
+    broadcastLayers = [];
+    syncAllCompanions();   // barre los companions que ya no pertenecen a ninguna capa
   }
 
   function buildBroadcastLayerTree(node, indexEntries, parentBroadcastId){
@@ -2675,6 +3372,7 @@
 
   var applyingRemoteState = false;
   function scheduleSave(){
+    if (climaViewActive) return;   // la vista temporal de la pestaña Clima no se guarda ni se sincroniza
     lastLocalEditTime = Date.now();
     var skipPush = applyingRemoteState;
     if (saveTimer) clearTimeout(saveTimer);
@@ -2927,8 +3625,25 @@
     if (withRef) url += '?ref=' + encodeURIComponent(githubConfig.branch || 'main');
     return url;
   }
+  function githubHeadersFor(token){
+    return { 'Authorization':'Bearer ' + token, 'Accept':'application/vnd.github+json' };
+  }
   function githubAuthHeaders(){
-    return { 'Authorization':'Bearer ' + githubConfig.token, 'Accept':'application/vnd.github+json' };
+    return githubHeadersFor(githubConfig.token);
+  }
+  // Normaliza los datos de sincronización (mismos valores por defecto que el diálogo de configuración).
+  function normalizeGithubConfig(repo, branch, path, token, autoSync){
+    return {
+      repo: String(repo || '').trim().replace(/^\/+|\/+$/g,''),
+      branch: String(branch || '').trim() || 'main',
+      path: String(path || '').trim().replace(/^\/+/,'') || 'data/estado.json',
+      token: String(token || '').trim(),
+      autoSync: !!autoSync
+    };
+  }
+  function applyGithubConfig(cfg){
+    githubConfig = cfg;
+    persistGithubConfig();
   }
   function resolveFileText(data){
     if (data.content) return Promise.resolve(base64ToUtf8(data.content));
@@ -3699,14 +4414,15 @@
   }
 
   document.getElementById('gh-save-config-btn').addEventListener('click', function(){
-    var repo = document.getElementById('gh-repo-input').value.trim().replace(/^\/+|\/+$/g,'');
-    var branch = document.getElementById('gh-branch-input').value.trim() || 'main';
-    var path = document.getElementById('gh-path-input').value.trim().replace(/^\/+/,'') || 'data/estado.json';
-    var token = document.getElementById('gh-token-input').value.trim();
-    var autoSync = document.getElementById('gh-autosync-input').checked;
-    if (!repo || !token){ alert('Complete al menos el repositorio y el token de acceso.'); return; }
-    githubConfig = { repo: repo, branch: branch, path: path, token: token, autoSync: autoSync };
-    persistGithubConfig();
+    var cfg = normalizeGithubConfig(
+      document.getElementById('gh-repo-input').value,
+      document.getElementById('gh-branch-input').value,
+      document.getElementById('gh-path-input').value,
+      document.getElementById('gh-token-input').value,
+      document.getElementById('gh-autosync-input').checked
+    );
+    if (!cfg.repo || !cfg.token){ alert('Complete al menos el repositorio y el token de acceso.'); return; }
+    applyGithubConfig(cfg);
     githubFileSha = null;
     githubPull(true);
     direccionBroadcastCache = null;
@@ -3912,7 +4628,11 @@
     if (!node) return;
     node.visible = visible;
     if (visible) map.addLayer(node.group); else map.removeLayer(node.group);
+    setLayerCompanionsVisible(node, visible);
     getBroadcastChildren(id).forEach(function(child){ setBroadcastLayerVisibilityRecursive(child.id, visible); });
+    // Los companions que se reconstruyen según `owner.visible` (MCC, zonas, texto, aéreo...) se
+    // reajustan con el barrido global; así el overlay se comporta igual que una capa propia.
+    syncAllCompanions();
   }
   function applyReadOnlySweep(container){
     container.querySelectorAll('input, select, button').forEach(function(el){
@@ -3975,11 +4695,8 @@
     return result;
   }
 
-  function setLayerVisibilityRecursive(id, visible){
-    var node = getLayer(id);
-    if (!node) return;
-    node.visible = visible;
-    if (visible) map.addLayer(node.group); else map.removeLayer(node.group);
+  /* Muestra/oculta los companions (decoraciones, etiquetas, íconos auxiliares) de todos los objetos de una capa. */
+  function setLayerCompanionsVisible(node, visible){
     node.group.eachLayer(function(s){
       var ind = supplyIndicators[s._shapeId];
       if (ind){ if (visible) ind.addTo(map); else map.removeLayer(ind); }
@@ -4012,6 +4729,14 @@
       var nameL = nameLabelLayers[s._shapeId];
       if (nameL){ if (visible) nameL.addTo(map); else map.removeLayer(nameL); }
     });
+  }
+
+  function setLayerVisibilityRecursive(id, visible){
+    var node = getLayer(id);
+    if (!node) return;
+    node.visible = visible;
+    if (visible) map.addLayer(node.group); else map.removeLayer(node.group);
+    setLayerCompanionsVisible(node, visible);
     getChildren(id).forEach(function(child){ setLayerVisibilityRecursive(child.id, visible); });
   }
 
@@ -4097,7 +4822,22 @@
   function getLayer(id){ return layers.find(function(l){ return l.id === id; }); }
   function getActiveLayer(){ return getLayer(activeLayerId); }
   function findLayerOfShape(shape){
-    return layers.find(function(l){ return l.group.hasLayer(shape); });
+    return layers.find(function(l){ return l.group.hasLayer(shape); }) ||
+           broadcastLayers.find(function(l){ return l.group.hasLayer(shape); });
+  }
+  /* Capas propias + capas de Dirección mostradas en modo lectura (broadcastLayers). Los
+     companions (decoraciones, textos, íconos auxiliares) de ambas se construyen, sincronizan en
+     cada zoom y se limpian con el MISMO código; por eso los barridos syncAll* recorren esta lista.
+     Todo lo que guarda/exporta/deshace sigue usando solo `layers`. */
+  function renderedLayers(){ return layers.concat(broadcastLayers); }
+  /* Los companions arrastrables (texto MCC, magnitud de zona, cuadro del corredor) solo se pueden
+     mover en capas editables: el overlay de Dirección (y las aulas vistas por Dirección en modo
+     vista) es de solo lectura. */
+  function companionsEditable(owner){
+    if (!owner) return true;
+    if (owner._broadcastReadOnly) return false;
+    if (owner._direccionAula && isReadOnlyMode()) return false;
+    return true;
   }
 
   function setActiveLayer(id){
@@ -4580,7 +5320,7 @@
   }
   function syncAllNameLabels(){
     var liveIds = {};
-    layers.forEach(function(l){
+    renderedLayers().forEach(function(l){
       l.group.eachLayer(function(s){
         var k = shapeKind(s);
         if (s._showName && (k === 'polygon' || k === 'polyline')) liveIds[s._shapeId] = s;
@@ -4621,7 +5361,7 @@
   }
   function syncAllLengthLabels(){
     var liveIds = {};
-    layers.forEach(function(l){
+    renderedLayers().forEach(function(l){
       l.group.eachLayer(function(s){
         if (s._showLength && shapeKind(s) === 'polyline') liveIds[s._shapeId] = s;
       });
@@ -4670,7 +5410,7 @@
   }
   function syncAllMilRadius(){
     var liveIds = {};
-    layers.forEach(function(l){
+    renderedLayers().forEach(function(l){
       l.group.eachLayer(function(s){
         if (s._isMilSymbol && s._mil && (s._mil.unitType === 'obus' || s._mil.unitType === 'radarmilitar')) liveIds[s._shapeId] = s;
         else if (s._isArma && s._arma && s._arma.radioAccionEnabled) liveIds[s._shapeId] = s;
@@ -7692,7 +8432,7 @@
   }
   function syncAllCamposMinadosCompanions(){
     var liveIds = {};
-    layers.forEach(function(l){
+    renderedLayers().forEach(function(l){
       l.group.eachLayer(function(s){ if (s._isCamposMinados){ liveIds[s._shapeId] = s; syncCamposMinadosCompanion(s); } });
     });
     Object.keys(camposMinadosLayers).forEach(function(id){
@@ -8333,7 +9073,7 @@
   }
   function syncAllTacticalTaskCompanions(){
     var liveIds = {};
-    layers.forEach(function(l){
+    renderedLayers().forEach(function(l){
       l.group.eachLayer(function(s){ if (s._task){ liveIds[s._shapeId] = s; syncTacticalTaskCompanion(s); } });
     });
     Object.keys(tacticalTaskLayers).forEach(function(id){
@@ -8518,7 +9258,7 @@
   }
   function syncAllSupplyIndicators(){
     var liveIds = {};
-    layers.forEach(function(l){
+    renderedLayers().forEach(function(l){
       l.group.eachLayer(function(s){
         if (s._shapeId && s._supply != null){ liveIds[s._shapeId] = s; }
       });
@@ -8675,7 +9415,7 @@
   }
   function syncAllEmisoraCoverage(){
     var liveIds = {};
-    layers.forEach(function(l){
+    renderedLayers().forEach(function(l){
       l.group.eachLayer(function(s){
         if (s._isInfra && s._infra && s._infra.tipo === 'emisora'){ liveIds[s._shapeId] = s; }
       });
@@ -9188,7 +9928,7 @@
   }
   function syncAllArrowOutlines(){
     var liveIds = {};
-    layers.forEach(function(l){
+    renderedLayers().forEach(function(l){
       l.group.eachLayer(function(s){ if (s._isArrow) { liveIds[s._shapeId] = s; syncArrowOutline(s); } });
     });
     Object.keys(arrowOutlines).forEach(function(id){
@@ -9310,7 +10050,7 @@
   }
   function syncAllArrowCorridors(){
     var liveIds = {};
-    layers.forEach(function(l){
+    renderedLayers().forEach(function(l){
       l.group.eachLayer(function(s){ if (s._isArrow && s._arrow.corridorEnabled) liveIds[s._shapeId] = s; });
     });
     Object.keys(arrowCorridorLines).forEach(function(id){
@@ -9353,7 +10093,7 @@
   }
   function syncAllArrowMainAttacks(){
     var liveIds = {};
-    layers.forEach(function(l){
+    renderedLayers().forEach(function(l){
       l.group.eachLayer(function(s){ if (s._isArrow && s._arrow.mainAttack) liveIds[s._shapeId] = s; });
     });
     Object.keys(arrowMainAttackMarks).forEach(function(id){
@@ -9602,7 +10342,7 @@
   }
   function syncAllDefensiveLineCompanions(){
     var liveIds = {};
-    layers.forEach(function(l){
+    renderedLayers().forEach(function(l){
       l.group.eachLayer(function(s){ if (s._defensiveLine){ liveIds[s._shapeId] = s; syncDefensiveLineCompanion(s); } });
     });
     Object.keys(defensiveLineLayers).forEach(function(id){
@@ -9757,7 +10497,7 @@
 
   function syncAllLimiteCompanions(){
     var liveIds = {};
-    layers.forEach(function(l){
+    renderedLayers().forEach(function(l){
       l.group.eachLayer(function(s){ if (s._limite && s._limite.enabled) liveIds[s._shapeId] = s; });
     });
     Object.keys(limiteLines).forEach(function(id){
@@ -11539,6 +12279,28 @@
   var direccionAulaSectionCollapsed = {};
   function isAulaSectionCollapsed(letra){ return direccionAulaSectionCollapsed[letra] !== false; }
 
+  /* Reconstruye los companions de TODAS las capas dibujadas (propias y overlay de Dirección). */
+  function syncAllCompanions(){
+    syncAllSupplyIndicators();
+    syncAllEmisoraCoverage();
+    syncAllMilRadius();
+    syncAllLengthLabels();
+    syncAllArrowOutlines();
+    syncAllArrowCorridors();
+    syncAllArrowMainAttacks();
+    syncAllLimiteCompanions();
+    syncAllDefensiveLineCompanions();
+    syncAllTacticalTaskCompanions();
+    syncAllCamposMinadosCompanions();
+    syncAllNameLabels();
+    syncAllArrowSimulados();
+    syncAllArrowLabels();
+    syncAllMccLineCompanions();
+    syncAllMccZonaCompanions();
+    syncAllMccTextCompanions();
+    syncAllMccAereo();
+  }
+
   function renderLayerList(){
     var list = document.getElementById('layer-list');
     list.innerHTML = '';
@@ -11565,24 +12327,7 @@
       if (readOnly && node._direccionAula && isAulaSectionCollapsed(node._direccionAula)) return;
       list.appendChild(buildLayerCard(node, 0));
     });
-    syncAllSupplyIndicators();
-    syncAllEmisoraCoverage();
-    syncAllMilRadius();
-    syncAllLengthLabels();
-    syncAllArrowOutlines();
-    syncAllArrowCorridors();
-    syncAllArrowMainAttacks();
-    syncAllLimiteCompanions();
-    syncAllDefensiveLineCompanions();
-    syncAllTacticalTaskCompanions();
-    syncAllCamposMinadosCompanions();
-    syncAllNameLabels();
-    syncAllArrowSimulados();
-    syncAllArrowLabels();
-    syncAllMccLineCompanions();
-    syncAllMccZonaCompanions();
-    syncAllMccTextCompanions();
-    syncAllMccAereo();
+    syncAllCompanions();
     if (isReadOnlyMode()){
       applyReadOnlySweep(list);
     }
@@ -15065,7 +15810,7 @@
       tipo: 'capas-completas-ccon-d',
       version: 1,
       generado: new Date().toISOString(),
-      fuente: 'Sistema de Anotación Cartográfica - División de Ejército III',
+      fuente: aulasFuenteText(),
       aula: currentUserLabel(),
       layers: layers.map(function(l){
         return { id: l.id, name: l.name, color: l.color, visible: l.visible, expanded: l.expanded, parentId: l.parentId, sortIndex: l.sortIndex, geojson: layerToGeoJSON(l) };
@@ -15605,6 +16350,7 @@
   function setMode(mode){
     document.body.classList.remove('mode-edicion','mode-coa','mode-enfoque','mode-personal','mode-clima');
     document.body.classList.add('mode-' + mode);
+    if (mode !== 'clima') leaveClima();
     modeEdicionBtn.classList.toggle('active', mode === 'edicion');
     modeCoaBtn.classList.toggle('active', mode === 'coa');
     modeEnfoqueBtn.classList.toggle('active', mode === 'enfoque');
@@ -15643,86 +16389,89 @@
   modeClimaBtn.addEventListener('click', function(){ setMode('clima'); });
 
   /* ---------------- PANEL CLIMA (Windy embebido) ---------------- */
-  var climaOverlayMap = null;
-  function ensureClimaOverlayMap(){
-    if (climaOverlayMap) return climaOverlayMap;
-    climaOverlayMap = L.map('clima-overlay-map', {
-      zoomControl:true, attributionControl:false, dragging:true, scrollWheelZoom:true,
-      doubleClickZoom:true, boxZoom:true, keyboard:true, touchZoom:true, tap:true,
-      fadeAnimation:false, inertia:true
-    });
-    climaOverlayMap.zoomControl.setPosition('bottomright');
-    var syncTimer = null;
-    climaOverlayMap.on('moveend zoomend', function(){
-      if (climaFollowSuspended) return;
-      clearTimeout(syncTimer);
-      syncTimer = setTimeout(pushOverlayViewToWindy, 550);
-    });
-    return climaOverlayMap;
-  }
+  /* La pestaña Clima NO crea un segundo mapa ni redibuja los objetos con una versión simplificada:
+     mientras está activa, el MISMO mapa principal (#map, con todas sus capas y companions ya
+     construidos por la tubería completa) se coloca encima del iframe de Windy, sin teselas y con
+     fondo transparente. Así los símbolos, decoraciones, textos y tamaños por zoom son idénticos a
+     los de la pestaña Edición. El mapa no captura el puntero (CSS), por lo que Windy se maneja con
+     normalidad. La vista de Edición se restaura al salir y no se guarda ni sincroniza la vista
+     temporal de Clima (ver scheduleSave). */
+  var climaViewActive = false;
+  var climaSavedView = null;
+  var climaMapHome = null;
   var climaFollowSuspended = false;
-  function pushOverlayViewToWindy(){
-    var m = climaOverlayMap;
-    if (!m) return;
-    var center = m.getCenter();
-    var zoom = Math.min(Math.max(Math.round(m.getZoom()), 3), 12);
-    var lat = center.lat.toFixed(3), lng = center.lng.toFixed(3);
-    var url = 'https://embed.windy.com/embed2.html?lat=' + lat + '&lon=' + lng +
+  var climaLeaving = false;
+  var climaSyncTimer = null;
+  var CLIMA_MIN_ZOOM = 3, CLIMA_MAX_ZOOM = 12;
+  function climaClampZoom(z){ return Math.min(Math.max(Math.round(z), CLIMA_MIN_ZOOM), CLIMA_MAX_ZOOM); }
+  function climaWindyUrl(lat, lng, zoom){
+    lat = lat.toFixed(3); lng = lng.toFixed(3);
+    return 'https://embed.windy.com/embed2.html?lat=' + lat + '&lon=' + lng +
       '&detailLat=' + lat + '&detailLon=' + lng +
       '&width=650&height=450&zoom=' + zoom + '&level=surface&overlay=wind' +
       '&menu=&message=true&marker=true&calendar=now&pressure=&type=map' +
       '&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1';
-    document.getElementById('clima-iframe').src = url;
   }
-  function renderClimaOverlayShapes(){
-    var m = ensureClimaOverlayMap();
-    m.eachLayer(function(l){ m.removeLayer(l); });
-    layers.forEach(function(layerObj){
-      if (!layerObj.visible) return;
-      var geo;
-      try{ geo = layerToGeoJSON(layerObj); } catch(err){ return; }
-      if (!geo || !geo.features || !geo.features.length) return;
-      L.geoJSON(geo, {
-        style: function(feature){
-          var p = feature.properties || {};
-          return {
-            color: p.color || layerObj.color || '#1F3864',
-            weight: p.weight || 2,
-            dashArray: p.dashArray || null,
-            fillColor: p.fillColor || p.color || layerObj.color || '#1F3864',
-            fillOpacity: p.fillOpacity != null ? p.fillOpacity : 0.35,
-            opacity: p.opacity != null ? p.opacity : 1
-          };
-        },
-        pointToLayer: function(feature, latlng){
-          var p = feature.properties || {};
-          return L.circleMarker(latlng, { radius:6, color:'#fff', weight:1.5, fillColor: p.color || layerObj.color || '#1F3864', fillOpacity:1 });
-        }
-      }).addTo(m);
-    });
+  function enterClima(){
+    if (climaViewActive) return;
+    climaSavedView = { center: map.getCenter(), zoom: map.getZoom() };
+    var mapEl = map.getContainer();
+    climaMapHome = { parent: mapEl.parentNode, next: mapEl.nextSibling };
+    climaViewActive = true;
+    document.getElementById('clima-panel').appendChild(mapEl);
+  }
+  function leaveClima(){
+    if (!climaViewActive) return;
+    clearTimeout(climaSyncTimer);
+    climaFollowSuspended = true;
+    climaLeaving = true;
+    var mapEl = map.getContainer();
+    if (climaMapHome && climaMapHome.parent) climaMapHome.parent.insertBefore(mapEl, climaMapHome.next && climaMapHome.next.parentNode === climaMapHome.parent ? climaMapHome.next : null);
+    var v = climaSavedView;
+    map.invalidateSize({ animate:false });
+    if (v) map.setView(v.center, v.zoom, { animate:false });
+    climaViewActive = false;
+    climaLeaving = false;
+    climaFollowSuspended = false;
+    climaSavedView = null;
+    climaMapHome = null;
+    document.body.classList.remove('clima-nav');
+    var navChk = document.getElementById('clima-nav-toggle');
+    if (navChk) navChk.checked = false;
+  }
+  function pushOverlayViewToWindy(){
+    if (!climaViewActive) return;
+    var c = map.getCenter();
+    document.getElementById('clima-iframe').src = climaWindyUrl(c.lat, c.lng, climaClampZoom(map.getZoom()));
   }
   function centerClimaOnMap(){
-    var center = map.getCenter();
-    var zoom = Math.min(Math.max(map.getZoom(), 3), 12);
-    var lat = center.lat.toFixed(3), lng = center.lng.toFixed(3);
-    var url = 'https://embed.windy.com/embed2.html?lat=' + lat + '&lon=' + lng +
-      '&detailLat=' + lat + '&detailLon=' + lng +
-      '&width=650&height=450&zoom=' + zoom + '&level=surface&overlay=wind' +
-      '&menu=&message=true&marker=true&calendar=now&pressure=&type=map' +
-      '&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1';
-    document.getElementById('clima-iframe').src = url;
-    var m = ensureClimaOverlayMap();
+    enterClima();
+    var v = climaSavedView || { center: map.getCenter(), zoom: map.getZoom() };
+    var zoom = climaClampZoom(v.zoom);
+    document.getElementById('clima-iframe').src = climaWindyUrl(v.center.lat, v.center.lng, zoom);
     climaFollowSuspended = true;
-    setTimeout(function(){
-      m.invalidateSize();
-      m.setView(center, zoom);
-      renderClimaOverlayShapes();
-      setTimeout(function(){ climaFollowSuspended = false; }, 300);
-    }, 60);
+    map.invalidateSize({ animate:false });
+    map.setView(v.center, zoom, { animate:false });
+    setTimeout(function(){ climaFollowSuspended = false; }, 300);
   }
+  map.on('zoomend', function(){
+    if (!climaViewActive || climaLeaving) return;
+    var z = map.getZoom(), cz = climaClampZoom(z);
+    if (z !== cz) map.setZoom(cz, { animate:false });
+  });
+  map.on('moveend zoomend', function(){
+    if (!climaViewActive || climaFollowSuspended) return;
+    clearTimeout(climaSyncTimer);
+    climaSyncTimer = setTimeout(pushOverlayViewToWindy, 550);
+  });
   document.getElementById('clima-center-btn').addEventListener('click', centerClimaOnMap);
+  document.getElementById('clima-zoom-in').addEventListener('click', function(){ if (climaViewActive) map.setZoom(climaClampZoom(map.getZoom() + 1)); });
+  document.getElementById('clima-zoom-out').addEventListener('click', function(){ if (climaViewActive) map.setZoom(climaClampZoom(map.getZoom() - 1)); });
   document.getElementById('clima-overlay-toggle').addEventListener('change', function(ev){
-    document.getElementById('clima-overlay-map').classList.toggle('hidden', !ev.target.checked);
+    document.body.classList.toggle('clima-no-calcos', !ev.target.checked);
+  });
+  document.getElementById('clima-nav-toggle').addEventListener('change', function(ev){
+    document.body.classList.toggle('clima-nav', ev.target.checked);
   });
 
   /* ---------------- PANEL ENFOQUE OPERACIONAL (imagen a pantalla completa) ---------------- */
@@ -17326,7 +18075,7 @@ var PERSONAL_SECTIONS = [{"key":"capacidad","label":"Capacidad de Personal","gro
   }
   function syncAllMccLineCompanions(){
     var liveIds = {};
-    layers.forEach(function(l){
+    renderedLayers().forEach(function(l){
       l.group.eachLayer(function(s){ if (s._isMccLine){ liveIds[s._shapeId] = s; syncMccLineCompanion(s); } });
     });
     Object.keys(mccLineCompanions).forEach(function(id){
@@ -17546,7 +18295,7 @@ var PERSONAL_SECTIONS = [{"key":"capacidad","label":"Capacidad de Personal","gro
     var color = shape.options.color;
     var entry = mccZonaCompanions[shape._shapeId];
     if (!entry){
-      var marker = L.marker(pos, { icon: buildZonaMagnitudeIcon(bearing-180, color, shape._mcc.echelon), draggable:true, zIndexOffset:650, title:'Arrastre para reposicionar el límite sobre el borde de la zona' });
+      var marker = L.marker(pos, { icon: buildZonaMagnitudeIcon(bearing-180, color, shape._mcc.echelon), draggable:companionsEditable(owner), zIndexOffset:650, title:'Arrastre para reposicionar el límite sobre el borde de la zona' });
       // IMPORTANTE: el boundary y el centroide se calculan UNA SOLA VEZ al iniciar el arrastre
       // (no en cada evento 'drag'), porque polygonCentroidLatLng usa turf.centroid sobre el
       // polígono completo — recalcularlo en cada pixel de movimiento, sobre un polígono de
@@ -17579,7 +18328,7 @@ var PERSONAL_SECTIONS = [{"key":"capacidad","label":"Capacidad de Personal","gro
   }
   function syncAllMccZonaCompanions(){
     var liveIds = {};
-    layers.forEach(function(l){
+    renderedLayers().forEach(function(l){
       l.group.eachLayer(function(s){ if (s._isMccPolygon){ liveIds[s._shapeId] = s; syncMccZonaCompanion(s); } });
     });
     Object.keys(mccZonaCompanions).forEach(function(id){
@@ -17652,7 +18401,7 @@ var PERSONAL_SECTIONS = [{"key":"capacidad","label":"Capacidad de Personal","gro
     var icon = buildMccTextIcon(shape._mccText);
     var m = mccTextCompanions[shape._shapeId];
     if (!m){
-      m = L.marker(pos, { icon: icon, draggable:true, zIndexOffset:700, title:'Arrastre para mover el texto' });
+      m = L.marker(pos, { icon: icon, draggable:companionsEditable(owner), zIndexOffset:700, title:'Arrastre para mover el texto' });
       m.on('drag', function(){
         var a2 = mccTextAnchor(shape);
         if (!a2) return;
@@ -17666,12 +18415,15 @@ var PERSONAL_SECTIONS = [{"key":"capacidad","label":"Capacidad de Personal","gro
     } else {
       m.setLatLng(pos);
       m.setIcon(icon);
+      // Respeta la visibilidad de la capa dueña (también para el overlay de Dirección).
+      if (owner.visible){ if (!map.hasLayer(m)) m.addTo(map); }
+      else if (map.hasLayer(m)) map.removeLayer(m);
     }
     if (shape._mccTextHandles) positionMccTextHandle(shape);
   }
   function syncAllMccTextCompanions(){
     var liveIds = {};
-    layers.forEach(function(l){
+    renderedLayers().forEach(function(l){
       l.group.eachLayer(function(s){ if (s._mccText && s._mccText.enabled){ liveIds[s._shapeId] = s; syncMccTextCompanion(s); } });
     });
     Object.keys(mccTextCompanions).forEach(function(id){
@@ -17850,7 +18602,7 @@ var PERSONAL_SECTIONS = [{"key":"capacidad","label":"Capacidad de Personal","gro
   }
   function syncAllArrowSimulados(){
     var liveIds = {};
-    layers.forEach(function(l){
+    renderedLayers().forEach(function(l){
       l.group.eachLayer(function(s){ if (s._isArrow && s._arrow.simulado) liveIds[s._shapeId] = s; });
     });
     Object.keys(arrowSimuladoMarks).forEach(function(id){
@@ -17890,7 +18642,7 @@ var PERSONAL_SECTIONS = [{"key":"capacidad","label":"Capacidad de Personal","gro
   }
   function syncAllArrowLabels(){
     var liveIds = {};
-    layers.forEach(function(l){
+    renderedLayers().forEach(function(l){
       l.group.eachLayer(function(s){ if (s._isArrow && s._arrow.labelText) liveIds[s._shapeId] = s; });
     });
     Object.keys(arrowLabelMarks).forEach(function(id){
@@ -18291,7 +19043,7 @@ var PERSONAL_SECTIONS = [{"key":"capacidad","label":"Capacidad de Personal","gro
   }
   function syncAllMccAereo(){
     var live = {};
-    layers.forEach(function(l){
+    renderedLayers().forEach(function(l){
       l.group.eachLayer(function(s){
         if (!s._shapeId) return;
         if (mccaIsAir(s) && !s._isMccPoint){ live[s._shapeId] = true; syncMccAereo(s); }
@@ -18301,7 +19053,7 @@ var PERSONAL_SECTIONS = [{"key":"capacidad","label":"Capacidad de Personal","gro
     Object.keys(mccaGroups).forEach(function(id){ if (!live[id]){ mccaGroups[id].remove(); delete mccaGroups[id]; } });
     Object.keys(mccaBoxes).forEach(function(id){ if (!live[id]){ mccaBoxes[id].remove(); delete mccaBoxes[id]; } });
     // marcadores de la Dirección de Ataque Aérea
-    layers.forEach(function(l){
+    renderedLayers().forEach(function(l){
       l.group.eachLayer(function(s){ if (s._isArrow && s._arrow && s._arrow.aereo) syncArrowAereo(s); });
     });
     Object.keys(arrowAereoMarks).forEach(function(id){ if (!live[id]){ arrowAereoMarks[id].remove(); delete arrowAereoMarks[id]; } });
@@ -18492,7 +19244,7 @@ var PERSONAL_SECTIONS = [{"key":"capacidad","label":"Capacidad de Personal","gro
     var pos = fromLocalXY(ll[0], b.dx || 0, b.dy || 0);
     var mk = mccaBoxes[id];
     if (!mk){
-      mk = L.marker(pos, { icon: mccaBoxIcon(shape), draggable: true, zIndexOffset: 700, title: 'Arrastre para mover el cuadro de datos' });
+      mk = L.marker(pos, { icon: mccaBoxIcon(shape), draggable: companionsEditable(owner), zIndexOffset: 700, title: 'Arrastre para mover el cuadro de datos' });
       var before = null;
       mk.on('dragstart', function(){ mk._mccaDragging = true; before = mccaSnapshot(shape); });
       mk.on('drag', function(){
